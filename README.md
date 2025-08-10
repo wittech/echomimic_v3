@@ -56,6 +56,7 @@ Terminal Technology Department, Alipay, Ant Group.
 * [2024.11.22] 🔥 [ComfyUI](https://github.com/smthemex/ComfyUI_EchoMimic) is now available. Thanks @smthemex for the contribution.
 * [2024.11.21] 🔥 We release the EMTD dataset list and processing scripts.
 * [2024.11.21] 🔥 We release our [EchoMimicV2](https://github.com/antgroup/echomimic_v2) codes and models. -->
+* [2024.11.21] 🔥 [GradioUI](https://github.com/antgroup/echomimic_v3/blob/main/app.py) is now available. Thanks @[gluttony-10](https://github.com/gluttony-10) for the contribution.
 * [2025.08.09] 🔥 We release our [models](https://modelscope.cn/models/BadToBest/EchoMimicV3) on ModelScope.
 * [2025.08.08] 🔥 We release our [codes](https://github.com/antgroup/echomimic_v3) and [models](https://huggingface.co/BadToBest/EchoMimicV3) on Huggingface.
 * [2025.07.08] 🔥 Our [paper](https://arxiv.org/abs/2507.03905) is in public on arxiv.
@@ -80,7 +81,7 @@ For more demo videos, please refer to the project page.
 - Tested Python Version: 3.10 / 3.11
 
 ### 🛠️Installation
-#### 1. Create a conda environment and install pytorch, xformers
+#### 1. Create a conda environment
 ```
 conda create -n echomimic_v3 python=3.10
 conda activate echomimic_v3
@@ -110,7 +111,7 @@ pip install -r requirements.txt
 ``` 
 ### 🔑 Quick Inference
 ```
-python infer.py
+python app.py
 ```
 > Tips
 > - Audio CFG: Audio CFG works optimally between 2~3. Increase the audio CFG value for better lip synchronization, while decreasing the audio CFG value can improve the visual quality.
@@ -123,9 +124,9 @@ python infer.py
 ## 📝 TODO List
 | Status | Milestone                                                                |     
 |:--------:|:-------------------------------------------------------------------------|
-|    2025.08.08    | The inference code of EchoMimicV3 meet everyone on GitHub   | 
-|    2025.08.08   | EchoMimicV3-preview model on HuggingFace | 
-|    2025.08.09   | EchoMimicV3-preview model on ModelScope | 
+|    ✅    | The inference code of EchoMimicV3 meet everyone on GitHub   | 
+|    ✅   | EchoMimicV3-preview model on HuggingFace | 
+|    ✅   | EchoMimicV3-preview model on ModelScope | 
 |    🚀  | ModelScope Space | 
 |    🚀    | Preview version Pretrained models trained on English and Chinese on ModelScope   | 
 |    🚀    | 720P Pretrained models trained on English and Chinese on HuggingFace | 
@@ -147,6 +148,14 @@ If you find our work useful for your research, please consider citing the paper 
   archivePrefix={arXiv}
 }
 ```
+## 📜 License
+The models in this repository are licensed under the Apache 2.0 License. We claim no rights over the your generated contents, 
+granting you the freedom to use them while ensuring that your usage complies with the provisions of this license. 
+You are fully accountable for your use of the models, which must not involve sharing any content that violates applicable laws, 
+causes harm to individuals or groups, disseminates personal information intended for harm, spreads misinformation, or targets vulnerable populations. 
+
 
 ## &#x1F31F; Star History
 [![Star History Chart](https://api.star-history.com/svg?repos=antgroup/echomimic_v3&type=Date)](https://www.star-history.com/#antgroup/echomimic_v3&Date)
+
+
