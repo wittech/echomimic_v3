@@ -20,12 +20,14 @@
     <sup>2</sup>通讯作者
 </p>
 <div align='center'>
+    <a href='https://github.com/antgroup/echomimic_v3'><img src='https://img.shields.io/github/stars/antgroup/echomimic_v3?style=social'></a>
     <a href='https://antgroup.github.io/ai/echomimic_v3/'><img src='https://img.shields.io/badge/项目主页-blue'></a>
-    <a href='https://huggingface.co/BadToBest/EchoMimicV3'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-模型-yellow'></a>
     <a href='https://arxiv.org/abs/2507.03905'><img src='https://img.shields.io/badge/论文-Arxiv-red'></a>
+    <a href='https://huggingface.co/BadToBest/EchoMimicV3'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-模型-yellow'></a>
+    <a href='https://modelscope.cn/models/BadToBest/EchoMimicV3'><img src='https://img.shields.io/badge/ModelScope-模型-purple'></a>
     <a href='https://github.com/antgroup/echomimic_v3/blob/main/asset/wechat_group.png'><img src='https://badges.aleen42.com/src/wechat.svg'></a>
+    <a href='https://github.com/antgroup/echomimic_v3/discussions/18'><img src='https://img.shields.io/badge/中文版-常见问题汇总-orange'></a>
     <!--<a href='https://antgroup.github.io/ai/echomimic_v2/'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Demo-yellow'></a>-->
-    <!-- <a href='https://modelscope.cn/models/BadToBest/EchoMimicV3'><img src='https://img.shields.io/badge/ModelScope-模型-purple'></a> -->
     <!--<a href='https://antgroup.github.io/ai/echomimic_v2/'><img src='https://img.shields.io/badge/ModelScope-Demo-purple'></a>-->
     <!-- <a href='https://openaccess.thecvf.com/content/CVPR2025/papers/Meng_EchoMimicV2_Towards_Striking_Simplified_and_Semi-Body_Human_Animation_CVPR_2025_paper.pdf'><img src='https://img.shields.io/badge/Paper-CVPR2025-blue'></a> -->
     
@@ -39,24 +41,10 @@
   <img src="asset/algo_framework.jpg"  height=700>
 </p>
 
-## &#x1F680; EchoMimic 系列
-* EchoMimicV3: 13亿参数即可实现统一多模态、多任务人体动画生成。[GitHub](https://github.com/antgroup/echomimic_v3)
-* EchoMimicV2: 面向震撼、简化、半身人体动画生成。[GitHub](https://github.com/antgroup/echomimic_v2)
-* EchoMimicV1: 基于可编辑关键点条件的逼真语音驱动肖像动画生成。[GitHub](https://github.com/antgroup/echomimic)
-
-
 ## &#x1F4E3; 更新日志
-<!-- * [2025.02.27] 🔥 EchoMimicV2 被 CVPR 2025 接收。
-* [2025.01.16] 🔥 请查看 [讨论区](https://github.com/antgroup/echomimic_v2/discussions) 学习如何启动 EchoMimicV2。
-* [2025.01.16] 🚀🔥 [加速版 EchoMimicV2 的 GradioUI](https://github.com/antgroup/echomimic_v2/blob/main/app_acc.py) 已发布。
-* [2025.01.03] 🚀🔥 **一分钟即可生成视频**。[加速版 EchoMimicV2](https://github.com/antgroup/echomimic_v2/blob/main/infer_acc.py) 发布，推理速度提升 9 倍（从 ~7 分钟/120 帧到 ~50 秒/120 帧，A100 GPU）。
-* [2024.12.16] 🔥 [参考图像姿态对齐 Demo](https://github.com/antgroup/echomimic_v2/blob/main/demo.ipynb) 已发布，包括参考图像对齐、提取驱动视频的姿态以及生成视频。
-* [2024.11.27] 🔥 [安装教程](https://www.youtube.com/watch?v=2ab6U1-nVTQ) 已发布，感谢 [AiMotionStudio](https://www.youtube.com/@AiMotionStudio) 的贡献。
-* [2024.11.22] 🔥 [GradioUI](https://github.com/antgroup/echomimic_v2/blob/main/app.py) 已发布，感谢 @gluttony-10 的贡献。
-* [2024.11.22] 🔥 [ComfyUI](https://github.com/smthemex/ComfyUI_EchoMimic) 已发布，感谢 @smthemex 的贡献。
-* [2024.11.21] 🔥 我们发布了 EMTD 数据集列表和处理脚本。
-* [2024.11.21] 🔥 我们发布了 [EchoMimicV2](https://github.com/antgroup/echomimic_v2) 的代码和模型。 -->
-* [2024.11.21] 🔥 [GradioUI](https://github.com/antgroup/echomimic_v3/blob/main/app.py) 已发布，感谢 @[gluttony-10](https://github.com/gluttony-10) 的贡献。
+* [2025.08.12] 🔥 **仅需12G显存生成视频**, 量化版本[GradioUI](https://github.com/antgroup/echomimic_v3/blob/main/app_mm.py)发布。 查看 [教程](https://www.bilibili.com/video/BV1W8tdzEEVN)。感谢@[gluttony-10](https://github.com/gluttony-10)贡献。
+* [2025.08.12] 🔥 EchoMimicV3支持16G显存，使用[ComfyUI](https://github.com/smthemex/ComfyUI_EchoMimic). 感谢 @[smthemex](https://github.com/smthemex)的贡献。
+* [2025.08.10] 🔥 [GradioUI](https://github.com/antgroup/echomimic_v3/blob/main/app.py) 已发布，感谢 @[gluttony-10](https://github.com/gluttony-10) 的贡献。
 * [2025.08.09] 🔥 我们在 ModelScope 上发布了 [模型](https://modelscope.cn/models/BadToBest/EchoMimicV3)。
 * [2025.08.08] 🔥 我们在 Huggingface 上发布了 [代码](https://github.com/antgroup/echomimic_v3) 和 [模型](https://huggingface.co/BadToBest/EchoMimicV3)。
 * [2025.07.08] 🔥 我们的 [论文](https://arxiv.org/abs/2507.03905) 在 arxiv 上公开。
@@ -71,8 +59,33 @@
         <video controls loop src="https://github.com/user-attachments/assets/f33edb30-66b1-484b-8be0-a5df20a44f3b" muted="false"></video>
     </td>
 </tr>
+<tr>
+    <td width=100% style="border: none">
+        <video controls loop src="https://github.com/user-attachments/assets/056105d8-47cd-4a78-8ec2-328ceaf95a5a" muted="false"></video>
+    </td>
+</tr>
 </table>
-更多演示视频，请访问项目主页。
+
+
+### 中文驱动效果
+<table class="center">
+<tr>
+    <td width=25% style="border: none">
+        <video controls loop src="https://github.com/user-attachments/assets/fc1ebae4-b571-43eb-a13a-7d6d05b74082" muted="false"></video>
+    </td>
+    <td width=25% style="border: none">
+        <video controls loop src="https://github.com/user-attachments/assets/54607cc7-944c-4529-9bef-715862ba330d" muted="false"></video>
+    </td>
+    <td width=25% style="border: none">
+        <video controls loop src="https://github.com/user-attachments/assets/4d1de999-cce2-47ab-89ed-f2fa11c838fe" muted="false"></video>
+    </td>
+    <td width=25% style="border: none">
+        <video controls loop src="https://github.com/user-attachments/assets/41e701cc-ac3e-4dd8-b94c-859261f17344" muted="false"></video>
+    </td>
+</tr>
+</table>
+
+更多演示视频，请访问[项目主页](https://antgroup.github.io/ai/echomimic_v3/)
 
 ## 快速开始
 ### 环境配置
@@ -95,7 +108,7 @@ pip install -r requirements.txt
 
 | 模型名称        |                       下载链接                                           |    备注                      |
 | --------------|-------------------------------------------------------------------------------|-------------------------------|
-| Wan2.1-Fun-1.3B-InP  |      🤗 [Huggingface](https://huggingface.co/alibaba-pai/Wan2.1-Fun-1.3B-InP)       | 基础模型
+| Wan2.1-Fun-1.3B-InP  |      🤗 [Huggingface](https://huggingface.co/alibaba-pai/Wan2.1-Fun-V1.1-1.3B-InP)       | 基础模型
 | wav2vec2-base |      🤗 [Huggingface](https://huggingface.co/facebook/wav2vec2-base-960h)          | 音频编码器
 | EchoMimicV3-preview      |      🤗 [Huggingface](https://huggingface.co/BadToBest/EchoMimicV3)              | 我们的权重
 | EchoMimicV3-preview      |      🤗 [ModelScope](https://modelscope.cn/models/BadToBest/EchoMimicV3)              | 我们的权重
@@ -104,21 +117,22 @@ pip install -r requirements.txt
 
 ```
 ./models/
-├── Wan2.1-Fun-1.3B-InP
+├── Wan2.1-Fun-V1.1-1.3B-InP
 ├── wav2vec2-base-960h
 └── transformer
     └── diffusion_pytorch_model.safetensors
 ``` 
 ### 🔑 快速推理
 ```
-python app.py
+python app_mm.py
 ```
 #### 提示
-> - 音频 CFG：音频 CFG 最佳范围为 2~3。增加音频 CFG 值可以改善唇同步效果，减少音频 CFG 值可以提高视觉质量。
-> - 文本 CFG：文本 CFG 最佳范围为 4~6。增加文本 CFG 值可以更好地遵循提示词，减少文本 CFG 值可以提高视觉质量。
-> - TeaCache：`--teacache_thresh` 的最佳范围为 0~0.1。
+> - 音频 CFG：音频 CFG `audio_guidance_scale` 最佳范围为 2~3。增加音频 CFG 值可以改善唇同步效果，减少音频 CFG 值可以提高视觉质量。
+> - 文本 CFG：文本 CFG `guidance_scale` 最佳范围为 3~6。增加文本 CFG 值可以更好地遵循提示词，减少文本 CFG 值可以提高视觉质量。
+> - TeaCache：`teacache_threshold` 的最佳范围为 0~0.1。
 > - 采样步数：头部动画为 5 步，全身动作为 15~25 步。
 > - ​长视频生成：如果需要生成超过 138 帧的视频，可以使用长视频 CFG。
+> - 尝试降低`partial_video_length`节省显存。
 
 
 ## 📝 待办事项
@@ -127,12 +141,16 @@ python app.py
 |    ✅    | EchoMimicV3 推理代码已发布至 GitHub   | 
 |    ✅   | EchoMimicV3-preview 模型已发布至 HuggingFace | 
 |    ✅   | EchoMimicV3-preview 模型已发布至 ModelScope | 
-|    🚀  | ModelScope Space | 
+|    🚀  | 在线体验版 | 
 |    🚀    | 英文和中文预训练模型（Preview 版本）已发布至 ModelScope   | 
 |    🚀    | 英文和中文预训练模型（720P）已发布至 HuggingFace | 
 |    🚀    | 英文和中文预训练模型（720P）已发布至 ModelScope   | 
 |    🚀    | EchoMimicV3 训练代码已发布至 GitHub   | 
 
+## &#x1F680; EchoMimic 系列
+* EchoMimicV3: 13亿参数即可实现统一多模态、多任务人体动画生成。[GitHub](https://github.com/antgroup/echomimic_v3)
+* EchoMimicV2: 面向震撼、简化、半身人体动画生成。[GitHub](https://github.com/antgroup/echomimic_v2)
+* EchoMimicV1: 基于可编辑关键点条件的逼真语音驱动肖像动画生成。[GitHub](https://github.com/antgroup/echomimic)
 
 
 ## &#x1F4D2; 引用

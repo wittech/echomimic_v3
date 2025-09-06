@@ -4,6 +4,7 @@
 # GitHUb: https://github.com/antgroup/echomimic_v3
 # Project Page: https://antgroup.github.io/ai/echomimic_v3/
 # ==============================================================================
+
 import os
 import math
 import datetime
@@ -38,6 +39,7 @@ from src.cache_utils import get_teacache_coefficients
 
 from src.face_detect import get_mask_coord
 
+from mmgp import offload, profile_type
 import argparse
 import gradio as gr
 import random
@@ -48,7 +50,18 @@ parser.add_argument("--server_name", type=str, default="127.0.0.1", help="IP地�
 parser.add_argument("--server_port", type=int, default=7891, help="使用端口")
 parser.add_argument("--share", action="store_true", help="是否启用gradio共享")
 parser.add_argument("--mcp_server", action="store_true", help="是否启用mcp服务")
+parser.add_argument("--max_vram", type=float, default=0.9, help="占用显存最大比例")
+parser.add_argument("--compile", action="store_true", help="是否启用compile加速")
 args = parser.parse_args()
+
+if torch.cuda.is_available():
+    device = "cuda" 
+    if torch.cuda.get_device_capability()[0] >= 8:
+        dtype = torch.bfloat16
+    else:
+        dtype = torch.float16
+else:
+    device = "cpu"
 
 
 # --------------------- Configuration ---------------------
@@ -79,15 +92,13 @@ class Config:
         self.shift = 5.0
         self.use_un_ip_mask = False
 
-        self.partial_video_length = 113
         self.overlap_video_length = 8
         self.neg_scale = 1.5
         self.neg_steps = 2
-        self.guidance_scale = 4.5 #3.0 ~ 6.0
+        self.guidance_scale = 4.5 #4.0 ~ 6.0
         self.audio_guidance_scale = 2.5 #2.0 ~ 3.0
         self.use_dynamic_cfg = True
         self.use_dynamic_acfg = True
-        self.seed = 43
         self.num_inference_steps = 20
         self.lora_weight = 1.0
 
@@ -169,6 +180,7 @@ if config.transformer_path is not None:
     state_dict = state_dict["state_dict"] if "state_dict" in state_dict else state_dict
     missing, unexpected = transformer.load_state_dict(state_dict, strict=False)
     print(f"Missing keys: {len(missing)}, Unexpected keys: {len(unexpected)}")
+
 vae = AutoencoderKLWan.from_pretrained(
     os.path.join(config.model_name, cfg['vae_kwargs'].get('vae_subpath', 'vae')),
     additional_kwargs=OmegaConf.to_container(cfg['vae_kwargs']),
@@ -205,7 +217,14 @@ pipeline = WanFunInpaintAudioPipeline(
     scheduler=scheduler,
     clip_image_encoder=clip_image_encoder,
 )
-pipeline.to(device=device)
+budgets = int(torch.cuda.get_device_properties(0).total_memory/1048576 * args.max_vram)
+print(f"自动调整最大显存占用为{budgets}MB")
+offload.profile(
+    pipeline, 
+    profile_type.LowRAM_HighVRAM, 
+    budgets={'*':budgets}, 
+    compile=True if args.compile else False,
+)
 
 # Enable TeaCache if required
 if config.enable_teacache:
@@ -224,6 +243,9 @@ def generate(
     audio,
     prompt,
     negative_prompt,
+    partial_video_length,
+    guidance_scale,
+    audio_guidance_scale,
     seed_param
 ):
     if seed_param<0:
@@ -269,7 +291,7 @@ def generate(
     ip_mask = get_ip_mask(coords).unsqueeze(0)
     ip_mask = torch.cat([ip_mask]*3).to(device=device, dtype=config.weight_dtype)
 
-    partial_video_length = int((config.partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
+    partial_video_length = int((partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
     latent_frames = (partial_video_length - 1) // vae.config.temporal_compression_ratio + 1
 
     # get clip image
@@ -280,9 +302,8 @@ def generate(
     last_frames = init_frames + partial_video_length
     new_sample = None
 
-    # Precompute mix_ratio outside the loop
-    mix_ratio = torch.linspace(0, 1, steps=config.overlap_video_length).view(1, 1, -1, 1, 1)
-
+    prompt_embeds, negative_prompt_embeds = pipeline.encode_prompt(prompt, negative_prompt, dtype=dtype)
+    
     while init_frames < video_length:
         if last_frames >= video_length:
             partial_video_length = video_length - init_frames
@@ -301,35 +322,35 @@ def generate(
 
         partial_audio_embeds = audio_embeds[:, init_frames * 2 : (init_frames + partial_video_length) * 2]
         # video_length = init_frames + partial_video_length
-        with torch.no_grad():
-            sample = pipeline(
-                prompt,
-                num_frames            = partial_video_length,
-                negative_prompt       = config.negative_prompt,
-                audio_embeds          = partial_audio_embeds,
-                audio_scale           = config.audio_scale,
-                ip_mask               = ip_mask,
-                use_un_ip_mask        = config.use_un_ip_mask,
-                height                = sample_height,
-                width                 = sample_width,
-                generator             = generator,
-                neg_scale             = config.neg_scale,
-                neg_steps             = config.neg_steps,
-                use_dynamic_cfg       = config.use_dynamic_cfg,
-                use_dynamic_acfg      = config.use_dynamic_acfg,
-                guidance_scale        = config.guidance_scale,
-                audio_guidance_scale  = config.audio_guidance_scale,
-                num_inference_steps   = config.num_inference_steps,
-                video                 = input_video,
-                mask_video            = input_video_mask,
-                clip_image            = clip_image,
-                cfg_skip_ratio        = config.cfg_skip_ratio,
-                shift                 = config.shift,
-            ).videos
-        
-        if init_frames != 0:
-            
 
+        sample = pipeline(
+            prompt_embeds         = prompt_embeds, 
+            negative_prompt_embeds= negative_prompt_embeds,
+            num_frames            = partial_video_length,
+            audio_embeds          = partial_audio_embeds,
+            audio_scale           = config.audio_scale,
+            ip_mask               = ip_mask,
+            use_un_ip_mask        = config.use_un_ip_mask,
+            height                = sample_height,
+            width                 = sample_width,
+            generator             = generator,
+            neg_scale             = config.neg_scale,
+            neg_steps             = config.neg_steps,
+            use_dynamic_cfg       = config.use_dynamic_cfg,
+            use_dynamic_acfg      = config.use_dynamic_acfg,
+            guidance_scale        = guidance_scale,
+            audio_guidance_scale  = audio_guidance_scale,
+            num_inference_steps   = config.num_inference_steps,
+            video                 = input_video,
+            mask_video            = input_video_mask,
+            clip_image            = clip_image,
+            cfg_skip_ratio        = config.cfg_skip_ratio,
+            shift                 = config.shift,
+        ).videos
+        if init_frames != 0:
+            mix_ratio = torch.from_numpy(
+                np.array([float(i) / float(config.overlap_video_length) for i in range(config.overlap_video_length)], np.float32)
+            ).unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
             new_sample[:, :, -config.overlap_video_length:] = (
                 new_sample[:, :, -config.overlap_video_length:] * (1 - mix_ratio) +
                 sample[:, :, :config.overlap_video_length] * mix_ratio
@@ -351,9 +372,6 @@ def generate(
         init_frames += partial_video_length - config.overlap_video_length
         last_frames = init_frames + partial_video_length
 
-        del input_video, input_video_mask, partial_audio_embeds
-        torch.cuda.empty_cache()  # Release unused memory
-            
     # Save generated video
     video_path = os.path.join(save_path, f"{timestamp}.mp4")
     video_audio_path = os.path.join(save_path, f"{timestamp}_audio.mp4")
@@ -390,7 +408,10 @@ with gr.Blocks(theme=gr.themes.Base()) as demo:
                 audio = gr.Audio(label="上传音频", type="filepath")
                 prompt = gr.Textbox(label="提示词", value="")
                 negative_prompt = gr.Textbox(label="负面提示词", value="Gesture is bad. Gesture is unclear. Strange and twisted hands. Bad hands. Bad fingers. Unclear and blurry hands. 手部快速摆动, 手指频繁抽搐, 夸张手势, 重复机械性动作.")
-                seed_param = gr.Number(label="种子，请输入正整数，-1为随机", value=-1)
+                partial_video_length = gr.Slider(label="分段长度", info="24G显存推荐113，16G显存推荐81，12G显存推荐49", minimum=49, maximum=161, step=16, value=113)
+                guidance_scale = gr.Slider(label="guidance scale", info="修改分段长度后调整，推荐范围3.0~6.0", minimum=1.0, maximum=10.0, step=0.1, value=4.5)
+                audio_guidance_scale = gr.Slider(label="audio guidance scale", info="修改分段长度后调整，推荐范围2.0~3.0", minimum=1.0, maximum=10.0, step=0.1, value=2.5)
+                seed_param = gr.Number(label="种子，请输入正整数，-1为随机", value=43)
                 generate_button = gr.Button("🎬 开始生成", variant='primary')
             with gr.Column():
                 video_output = gr.Video(label="生成结果", interactive=False)
@@ -404,6 +425,9 @@ with gr.Blocks(theme=gr.themes.Base()) as demo:
             audio,
             prompt,
             negative_prompt,
+            partial_video_length,
+            guidance_scale,
+            audio_guidance_scale,
             seed_param,
         ],
         outputs = [video_output, seed_output]

@@ -57,12 +57,12 @@ class Config:
 
         # Paths
         self.config_path = "config/config.yaml"
-        self.model_name = "models/Wan2.1-Fun-1.3B-InP"
+        self.model_name = "models/Wan2.1-Fun-V1.1-1.3B-InP"
         self.transformer_path = "models/transformer/diffusion_pytorch_model.safetensors"
         self.vae_path = None
 
         # Sampler and audio settings
-        self.sampler_name = "Flow_DPM++"
+        self.sampler_name = "Flow"
         self.audio_scale = 1.0
         self.enable_teacache = False
         self.teacache_threshold = 0.1
@@ -72,16 +72,17 @@ class Config:
         # Inference parameters
         self.negative_prompt = "Gesture is bad. Gesture is unclear. Strange and twisted hands. Bad hands. Bad fingers. Unclear and blurry hands. 手部快速摆动, 手指频繁抽搐, 夸张手势, 重复机械性动作."#Unclear gestures, broken hands, more than five fingers on one hand, extra fingers, fused fingers. "# Strange body and strange trajectory. Distortion.  "
 
+        self.use_longvideo_cfg = True
         self.partial_video_length = 113
         self.overlap_video_length = 8
         self.neg_scale = 1.5
         self.neg_steps = 2
-        self.guidance_scale = 4.5 #4.0 ~ 6.0
-        self.audio_guidance_scale = 2.5 #2.0 ~ 3.0
+        self.guidance_scale = 4. #4.0 ~ 6.0
+        self.audio_guidance_scale = 2.9 #2.0 ~ 3.0
         self.use_dynamic_cfg = True
         self.use_dynamic_acfg = True
         self.seed = 43
-        self.num_inference_steps = 20
+        self.num_inference_steps = 25
         self.lora_weight = 1.0
 
         # Model settings
@@ -294,38 +295,92 @@ def main():
         partial_video_length = int((config.partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
         latent_frames = (partial_video_length - 1) // vae.config.temporal_compression_ratio + 1
 
-        # get clip image
-        _, _, clip_image = get_image_to_video_latent3(ref_img, None, video_length=partial_video_length, sample_size=[sample_height, sample_width])
+        if not config.use_longvideo_cfg:
+            # get clip image
+            _, _, clip_image = get_image_to_video_latent3(ref_img, None, video_length=partial_video_length, sample_size=[sample_height, sample_width])
 
-        # Generate video in chunks
-        init_frames = 0
-        last_frames = init_frames + partial_video_length
-        new_sample = None
+            # Generate video in chunks
+            init_frames = 0
+            last_frames = init_frames + partial_video_length
+            new_sample = None
 
-        while init_frames < video_length:
-            if last_frames >= video_length:
-                partial_video_length = video_length - init_frames
-                partial_video_length = (
-                    int((partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1
-                    if video_length != 1 else 1
+            # Precompute mix_ratio outside the loop
+            mix_ratio = torch.linspace(0, 1, steps=config.overlap_video_length).view(1, 1, -1, 1, 1)
+
+            while init_frames < video_length:
+                if last_frames >= video_length:
+                    partial_video_length = video_length - init_frames
+                    partial_video_length = (
+                        int((partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1
+                        if video_length != 1 else 1
+                    )
+                    latent_frames = (partial_video_length - 1) // vae.config.temporal_compression_ratio + 1
+
+                    if partial_video_length <= 0:
+                        break
+
+                input_video, input_video_mask, _ = get_image_to_video_latent3(
+                    ref_img, None, video_length=partial_video_length, sample_size=[sample_height, sample_width]
                 )
-                latent_frames = (partial_video_length - 1) // vae.config.temporal_compression_ratio + 1
+        
+                partial_audio_embeds = audio_embeds[:, init_frames * 2 : (init_frames + partial_video_length) * 2]
+                
+                sample  = pipeline(
+                    prompt,
+                    num_frames            = partial_video_length,
+                    negative_prompt       = config.negative_prompt,
+                    audio_embeds          = partial_audio_embeds,
+                    audio_scale           = config.audio_scale,
+                    ip_mask               = ip_mask,
+                    use_un_ip_mask        = config.use_un_ip_mask,
+                    height                = sample_height,
+                    width                 = sample_width,
+                    generator             = generator,
+                    neg_scale             = config.neg_scale,
+                    neg_steps             = config.neg_steps,
+                    use_dynamic_cfg       = config.use_dynamic_cfg,
+                    use_dynamic_acfg      = config.use_dynamic_acfg,
+                    guidance_scale        = config.guidance_scale,
+                    audio_guidance_scale  = config.audio_guidance_scale,
+                    num_inference_steps   = config.num_inference_steps,
+                    video                 = input_video,
+                    mask_video            = input_video_mask,
+                    clip_image            = clip_image,
+                    cfg_skip_ratio        = config.cfg_skip_ratio,
+                    shift                 = config.shift,
+                    use_longvideo_cfg     = config.use_longvideo_cfg,
+                    overlap_video_length  = config.overlap_video_length,
+                    partial_video_length  = partial_video_length,
+                    ).videos
+                
+                if init_frames != 0:
+                    new_sample[:, :, -config.overlap_video_length:] = (
+                        new_sample[:, :, -config.overlap_video_length:] * (1 - mix_ratio) +
+                        sample[:, :, :config.overlap_video_length] * mix_ratio
+                    )
+                    new_sample = torch.cat([new_sample, sample[:, :, config.overlap_video_length:]], dim=2)
+                    sample = new_sample
+                else:
+                    new_sample = sample
 
-                if partial_video_length <= 0:
+                if last_frames >= video_length:
                     break
 
-            input_video, input_video_mask, _ = get_image_to_video_latent3(
-                ref_img, None, video_length=partial_video_length, sample_size=[sample_height, sample_width]
-            )
-    
-            partial_audio_embeds = audio_embeds[:, init_frames * 2 : (init_frames + partial_video_length) * 2]
-            # video_length = init_frames + partial_video_length
+                ref_img = [
+                    Image.fromarray(
+                        (sample[0, :, i].transpose(0, 1).transpose(1, 2) * 255).numpy().astype(np.uint8)
+                    ) for i in range(-config.overlap_video_length, 0)
+                ]
 
-            sample = pipeline(
+                init_frames += partial_video_length - config.overlap_video_length
+                last_frames = init_frames + partial_video_length
+        else:
+            input_video, input_video_mask, clip_image = get_image_to_video_latent3(ref_img, None, video_length=video_length, sample_size=[sample_height, sample_width])
+            sample  = pipeline(
                 prompt,
-                num_frames            = partial_video_length,
+                num_frames            = video_length,
                 negative_prompt       = config.negative_prompt,
-                audio_embeds          = partial_audio_embeds,
+                audio_embeds          = audio_embeds,
                 audio_scale           = config.audio_scale,
                 ip_mask               = ip_mask,
                 use_un_ip_mask        = config.use_un_ip_mask,
@@ -344,40 +399,15 @@ def main():
                 clip_image            = clip_image,
                 cfg_skip_ratio        = config.cfg_skip_ratio,
                 shift                 = config.shift,
+                use_longvideo_cfg     = config.use_longvideo_cfg,
+                overlap_video_length  = config.overlap_video_length,
+                partial_video_length  = partial_video_length,
+
             ).videos
-            
-            if init_frames != 0:
-                mix_ratio = torch.from_numpy(
-                    np.array([float(i) / float(config.overlap_video_length) for i in range(config.overlap_video_length)], np.float32)
-                ).unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
-                new_sample[:, :, -config.overlap_video_length:] = (
-                    new_sample[:, :, -config.overlap_video_length:] * (1 - mix_ratio) +
-                    sample[:, :, :config.overlap_video_length] * mix_ratio
-                )
-                new_sample = torch.cat([new_sample, sample[:, :, config.overlap_video_length:]], dim=2)
-                sample = new_sample
-            else:
-                new_sample = sample
-
-            if last_frames >= video_length:
-                break
-
-            ref_img = [
-                Image.fromarray(
-                    (sample[0, :, i].transpose(0, 1).transpose(1, 2) * 255).numpy().astype(np.uint8)
-                ) for i in range(-config.overlap_video_length, 0)
-            ]
-
-            init_frames += partial_video_length - config.overlap_video_length
-            last_frames = init_frames + partial_video_length
 
         # Save generated video
         video_path = os.path.join(save_path, f"{test_name}.mp4")
         video_audio_path = os.path.join(save_path, f"{test_name}_audio.mp4")
-
-        print ("final sample shape:",sample.shape)
-        video_length = sample.shape[2]
-        print ("final length:",video_length)
 
         save_videos_grid(sample[:, :, :video_length], video_path, fps=config.fps)
 
